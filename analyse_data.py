@@ -105,7 +105,7 @@ if uploaded_file is not None:
             value_types = intial_data_df[intial_data_df['value'] == value]['name'].value_counts()
             value_row.extend([
                 value_types.get('periodic', 0), 
-                value_types.get('seek', 0),
+                value_types.get('seeked', 0),
                 value_types.get('play', 0), 
                 value_types.get('pause', 0)
             ])
@@ -115,7 +115,7 @@ if uploaded_file is not None:
         # Create DataFrame with all values
         value_breakdown_df = pd.DataFrame(
             value_breakdown, 
-            columns=['Value', 'Total Count', 'Periodic', 'Seek', 'Play', 'Pause']
+            columns=['Value', 'Total Count', 'Periodic', 'Seeked', 'Play', 'Pause']
         )
 
         # Display with Streamlit
