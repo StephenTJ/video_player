@@ -139,8 +139,8 @@ if uploaded_file is not None:
         labels={"timestamp": "Time", "value": "Value"},
     )
     fig.update_layout(
-        xaxis_title="Timestamp",
-        yaxis_title="Value",
+        xaxis_title="Values",
+        yaxis_title="Timestamp",
         title_x=0.5,
         margin=dict(l=10, r=10, t=40, b=10),
         height=500,
@@ -161,8 +161,8 @@ if uploaded_file is not None:
         labels={"timestamp": "Time", "value": "Value"},
     )
     fig.update_layout(
-        xaxis_title="Timestamp",
-        yaxis_title="Value",
+        xaxis_title="Values",
+        yaxis_title="Timestamp",
         title_x=0.5,
         margin=dict(l=10, r=10, t=40, b=10),
         height=500,
@@ -190,8 +190,8 @@ if uploaded_file is not None:
         labels={"timestamp": "Time", "value": "Value"},
     )
     fig.update_layout(
-        xaxis_title="time_value",
-        yaxis_title="time_value",
+        xaxis_title="Values",
+        yaxis_title="Timestamp",
         title_x=0.5,
         margin=dict(l=10, r=10, t=40, b=10),
         height=500,
@@ -234,7 +234,7 @@ if uploaded_file is not None:
         color='violet',
         height=150
     ).encode(
-        x=alt.X('Time', title='Time')
+        x=alt.X('Time', title='Time (seconds)')
             .scale(zero=False, nice=False),
         y=alt.Y('Frequency_normalized', title='Normalized Frequency')
             .scale(domain=[MIN_VALUE, MAX_VALUE])
