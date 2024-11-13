@@ -2,11 +2,25 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import json
+import numpy as np
+import altair as alt
 
 st.set_page_config(layout="wide")
-st.title("Video Timeline Data Analysis")
+st.markdown("<h1 style='color: #4169E1;'>Analyzing Video Engagement</h1>", unsafe_allow_html=True)
+st.markdown("<p style='color: #666666;'>Analyze and visualize user interaction patterns throughout video playback</p>", unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("Upload a JSON file", type="json")
+
+def get_frequencies(values, duration):
+    counts = np.zeros(duration, dtype=int)
+    
+    for value in values:
+        second = int(value)
+        if 0 <= second < duration:
+            counts[second] += 1
+    counts = np.array(counts)
+    x_axis = np.arange(duration)
+    return counts, x_axis
 
 def find_increasing_sequences(numbers):
     result = []
@@ -32,13 +46,18 @@ def find_increasing_sequences(numbers):
     
     return result_values, result_indices
 
+def normalize_data(data, column, min_val, max_val):
+    normalized = (data[column] - data[column].min()) / (data[column].max() - data[column].min())
+    return normalized * (max_val - min_val) + min_val
 
 if uploaded_file is not None:
-    
     json_data = json.loads(uploaded_file.read().decode("utf-8"))
-    st.write(json_data)
-
     intial_data_df = pd.DataFrame(json_data['events'])
+    total_events = len(intial_data_df)
+    st.write(f"**Total number of events**: {total_events}")
+    st.write(json_data)
+    total_video_duration = int(json_data['videoDuration'])
+    
 
     print(intial_data_df)
     
@@ -50,15 +69,13 @@ if uploaded_file is not None:
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("<h3 style='color: #1E90FF; font-family: Arial, sans-serif;'>Initial Data from Uploaded JSON</h3>", unsafe_allow_html=True)
-        st.dataframe(intial_data_df, use_container_width=True, height=680)
+        st.markdown("<h3 style='color: #1E90FF;'>Initial Data from Uploaded JSON</h3>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #666666;'>Raw event data captured from video interactions</p>", unsafe_allow_html=True)
+        st.dataframe(intial_data_df, use_container_width=True, height=720)
 
     with col2:
-        st.write("### Data Insights")
-        
-        
-        total_events = len(intial_data_df)
-        st.write(f"**Total number of events**: {total_events}")
+        st.markdown("<h3 style='color: #1E90FF;'>Data Insights</h3>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #666666;'>Key metrics and patterns extracted from the event data</p>", unsafe_allow_html=True)
 
         
         name_counts = intial_data_df['name'].value_counts().reset_index()
@@ -75,28 +92,43 @@ if uploaded_file is not None:
         st.table(name_contribution_df)
 
         
-        top_10_values = intial_data_df['value'].value_counts().head(10).reset_index()
-        top_10_values.columns = ['Value', 'Count']
+        value_frequencies = intial_data_df['value'].value_counts().reset_index()
+        value_frequencies.columns = ['Value', 'Count']
 
-        
+        # Create breakdown for all values
         value_breakdown = []
-        for _, row in top_10_values.iterrows():
+        for _, row in value_frequencies.iterrows():
             value = row['Value']
             value_row = [value, row['Count']]
             
-            
+            # Get counts for each event type
             value_types = intial_data_df[intial_data_df['value'] == value]['name'].value_counts()
-            value_row.extend([value_types.get('periodic', 0), value_types.get('seek', 0),
-                             value_types.get('play', 0), value_types.get('pause', 0)])
+            value_row.extend([
+                value_types.get('periodic', 0), 
+                value_types.get('seek', 0),
+                value_types.get('play', 0), 
+                value_types.get('pause', 0)
+            ])
             
             value_breakdown.append(value_row)
-        
-        value_breakdown_df = pd.DataFrame(value_breakdown, columns=['Value', 'Total Count', 'Periodic', 'Seek', 'Play', 'Pause'])
-        
-        st.write("**Top 10 Most Frequent Values with Event Type Breakdown**:")
-        st.table(value_breakdown_df)
 
-    st.write("### Data Points for Inital data")
+        # Create DataFrame with all values
+        value_breakdown_df = pd.DataFrame(
+            value_breakdown, 
+            columns=['Value', 'Total Count', 'Periodic', 'Seek', 'Play', 'Pause']
+        )
+
+        # Display with Streamlit
+        st.markdown("<h3 style='color: #1E90FF;'>Complete Value Frequency Breakdown</h3>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #666666;'>Detailed breakdown of all values and their event type distributions</p>", unsafe_allow_html=True)
+        st.dataframe(
+            value_breakdown_df,
+            use_container_width=True,
+            height=360,
+        )
+
+    st.markdown("<h3 style='color: #1E90FF;'>Data Points for Initial Data</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #666666;'>Scatter plot visualization of all event types across timeline</p>", unsafe_allow_html=True)
     fig = px.scatter(
         intial_data_df,
         x="value",
@@ -115,7 +147,8 @@ if uploaded_file is not None:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    st.write("# Dataframe for periodic")
+    st.markdown("<h2 style='color: #1E90FF;'>Data Points for Periodic Events</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #666666;'>Filtered view showing only periodic tracking events</p>", unsafe_allow_html=True)
     filtered_df = intial_data_df[intial_data_df['name'] == 'periodic'].sort_values(by='timestamp')
     
     fig = px.scatter(
@@ -136,7 +169,8 @@ if uploaded_file is not None:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    st.write("# Remove isolated and non continous values from data frame")
+    st.markdown("<h2 style='color: #1E90FF;'>Continuous Viewing Patterns</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #666666;'>Data showing only continuous viewing sequences, excluding isolated events and non continous events</p>", unsafe_allow_html=True)
 
     
     continuous_values, continues_indices = find_increasing_sequences(filtered_df['value'].tolist())
@@ -147,8 +181,7 @@ if uploaded_file is not None:
     
     df_rows = pd.DataFrame({'timestamp': timestamp_values, 'values': continuous_values})
     df_rows['time'] = df_rows['timestamp'].dt.strftime('%I:%M:%S %p')
-    st.write(df_rows)
-    
+
     fig = px.scatter(
         df_rows,
         x="values",
@@ -165,4 +198,60 @@ if uploaded_file is not None:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-        
+    value_frequency, time_seconds = get_frequencies(continuous_values, total_video_duration)
+
+    data = pd.DataFrame({
+        'Time': time_seconds,
+        'Frequency': value_frequency
+    })
+
+
+    st.markdown("<h3 style='color: #1E90FF;'>Frequency Distribution</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #666666;'>Interactive visualization showing the distribution of viewing patterns over time</p>", unsafe_allow_html=True)
+    
+    bar_chart = alt.Chart(data).mark_bar().encode(
+        x=alt.X('Time', title='Time (seconds)'),
+        y=alt.Y('Frequency', title='Frequency'),
+        color=alt.Color('Frequency:Q', scale=alt.Scale(scheme='oranges'))
+    ).properties(
+        width=600,
+        height=400
+    )
+    st.altair_chart(bar_chart, use_container_width=True)
+
+    MIN_VALUE = 0  
+    MAX_VALUE = 10
+
+    data['Frequency_normalized'] = normalize_data(data, 'Frequency', MIN_VALUE, MAX_VALUE)
+
+    st.markdown("<h3 style='color: #1E90FF;'>Normalized Area Chart</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #666666;'><span style='font-size: 16px; color: #1E90FF;'>Final Data</span>, Data normalized to a scale of 1-10 for visualization</p>", unsafe_allow_html=True)
+
+    area = alt.Chart(data).mark_area(
+        clip=True,
+        interpolate='monotone',
+        opacity=0.6,
+        color='violet',
+        height=150
+    ).encode(
+        x=alt.X('Time', title='Time')
+            .scale(zero=False, nice=False),
+        y=alt.Y('Frequency_normalized', title='Normalized Frequency')
+            .scale(domain=[MIN_VALUE, MAX_VALUE])
+    ).properties(
+        width=500,
+        height=150
+    )
+
+    st.altair_chart(area, use_container_width=True)
+
+    col3, col4 = st.columns(2)
+    with col3:
+        st.markdown("<h4 style='color: #1E90FF;'>Continuous Viewing Sequences</h4>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #666666;'>Timeline of uninterrupted viewing patterns excluding isolated events</p>", unsafe_allow_html=True)
+        st.dataframe(df_rows, use_container_width=True)
+
+    with col4:
+        st.markdown("<h4 style='color: #1E90FF;'>Video Segment Popularity</h4>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #666666;'>Frequency distribution of views across video timeline</p>", unsafe_allow_html=True)
+        st.dataframe(data,use_container_width=True)
